@@ -6,7 +6,8 @@ import tempfile
 import os
 import signal
 
-# For PyRIDECommander, from https://gist.github.com/awesomebytes/a852e34cd6965173244247ea5ce069ff
+# For PyRIDECommander, from
+# https://gist.github.com/awesomebytes/a852e34cd6965173244247ea5ce069ff
 import telnetlib
 from ast import literal_eval
 
@@ -128,9 +129,15 @@ class MyApp(App):
     def main(self):
         container = gui.VBox()
 
+        horizontal_container_buttons = gui.HBox()
+
         self.launch_bt = gui.Button('Launch PyRIDE PR2')
         self.launch_bt.set_on_click_listener(self.on_launch_bt_pressed)
-        container.append(self.launch_bt)
+        self.stop_bt = gui.Button('Stop PyRIDE PR2')
+        self.stop_bt.set_on_click_listener(self.on_stop_bt_pressed)
+        horizontal_container_buttons.append(self.launch_bt)
+        horizontal_container_buttons.append(self.stop_bt)
+        container.append(horizontal_container_buttons)
 
         horizontal_container = gui.HBox()
         self.say_input = gui.TextInput(width=300, hint='say...')
@@ -148,6 +155,15 @@ class MyApp(App):
     def on_launch_bt_pressed(self, widget):
         self.cmd = ShellCmd("roslaunch pyride_pr2 pyride.launch")
 
+    def on_stop_bt_pressed(self, widget):
+        # Big command that:
+        #                           checks all processes
+        #                                        only the ones that have pyride.launch
+        #                                                           not the grep itself
+        #                                                                          second column is the PID
+        #                      kill all those PIDS
+        self.cmd_kill = ShellCmd("kill `ps aux | grep pyride.launch | grep -v grep | awk '{print $2}'`")
+
     def on_say(self, widget, *args, **kwargs):
         self.prc = PyRIDECommander()
         text = self.say_input.get_text()
@@ -156,4 +172,9 @@ class MyApp(App):
 
 if __name__ == '__main__':
     # starts the webserver
-    start(MyApp, address='0.0.0.0', port=8111)
+    start(MyApp,
+          address='0.0.0.0',
+          port=8111,
+          websocket_port=8082,
+          host_name='138.25.61.21')
+    # host_name can be pr2 if no phones are accessing
